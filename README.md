@@ -1,4 +1,4 @@
-# NewsletterTester
+# Newsletter Tester
 A simple winforms project for testing html based newsletters.
 
 # How it works
