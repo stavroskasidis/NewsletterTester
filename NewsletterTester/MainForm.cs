@@ -77,7 +77,7 @@ namespace NewsletterTester
                         throw new Exception(response.ReasonPhrase);
                     }
                     smtpClient.Credentials = new NetworkCredential(_username, _password);
-                    smtpClient.EnableSsl = true;
+                    smtpClient.EnableSsl = _enableSsl;
                     var responseString = await response.Content.ReadAsStringAsync();
                     mail.Body = responseString;
                     mail.IsBodyHtml = true;
