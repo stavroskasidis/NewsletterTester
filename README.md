@@ -2,9 +2,12 @@
 A simple winforms project for testing html based newsletters.
 
 # How it works
-You input the url of the html page you want to test and the e-mail(s) that you want to send the page to. The app will download the html page and send it to the provided e-mail(s).
+The app performs a GET request to a url, downloads its contents and send them as the body of an e-mail to the provided address(es).
 
 # How to use
-1. Download the latest version.
+1. Download from here.
 2. Open the NewsletterTester.exe.config and set your smtp settings.
 3. Run the app.
+4. Provide the url to test.
+5. Provide the e-mail address(es) to send the e-mail to.
+6. Press the "Send" button.
