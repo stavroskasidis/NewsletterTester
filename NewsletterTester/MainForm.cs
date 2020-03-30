@@ -1,4 +1,6 @@
-﻿using System;
+﻿using MailKit.Net.Smtp;
+using MimeKit;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Configuration;
@@ -8,7 +10,6 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Net.Mail;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -67,29 +68,46 @@ namespace NewsletterTester
                 
                 MessageLabel.Text = "Downloading url ...";
 
-                using (var smtpClient = new SmtpClient(_smtp, _smtpPort))
+
+
                 using (var httpClient = new HttpClient())
                 using (var response = await httpClient.GetAsync(url))
-                using (var mail = new MailMessage())
                 {
                     if (!response.IsSuccessStatusCode)
                     {
                         throw new Exception(response.ReasonPhrase);
                     }
-                    smtpClient.Credentials = new NetworkCredential(_username, _password);
-                    smtpClient.EnableSsl = _enableSsl;
+
+
+                    var mimeMessage = new MimeMessage();
+                    mimeMessage.From.Add(new MailboxAddress("Newsletter Tester", _username));
+                    mimeMessage.To.Add(new MailboxAddress(emailTo));
+                    mimeMessage.Subject = $"Newsletter Tester '{url}'";
+
+                    var builder = new BodyBuilder();
                     var responseString = await response.Content.ReadAsStringAsync();
-                    mail.Body = responseString;
-                    mail.IsBodyHtml = true;
-                    mail.Subject = $"Newsletter Tester '{url}'";
+                    builder.HtmlBody = responseString;
 
-                    mail.From = new MailAddress(_username, "Newsletter Tester");
-                    mail.To.Add(new MailAddress(emailTo));
+                    mimeMessage.Body = builder.ToMessageBody();
+                    using (var client = new SmtpClient())
+                    {
 
-                    MessageLabel.Text = "Sending e-mail ...";
-                    await Task.Run(() => smtpClient.Send(mail));
-                    MessageLabel.Text = "E-mail sent successfully !";
-                    SpinnerPictureBox.Image = Resources.Check;
+                        MessageLabel.Text = "Connecting to smtp ...";
+                        // For demo-purposes, accept all SSL certificates (in case the server supports STARTTLS)
+                        //client.ServerCertificateValidationCallback = (s, c, h, e) => true;
+                        await client.ConnectAsync(_smtp, _smtpPort, MailKit.Security.SecureSocketOptions.Auto);
+
+                        if (!string.IsNullOrWhiteSpace(_username) && !string.IsNullOrWhiteSpace(_password))
+                        {
+                            MessageLabel.Text = "Authenticating with smtp ...";
+                            await client.AuthenticateAsync(_username, _password);
+                        }
+                        MessageLabel.Text = "Sending e-mail ...";
+                        await client.SendAsync(mimeMessage);
+                        MessageLabel.Text = "E-mail sent successfully !";
+                        SpinnerPictureBox.Image = Resources.Check;
+                        await client.DisconnectAsync(true);
+                    }
 
                     AddToRecentData(_recentData, url, emailTo);
                 }
@@ -169,7 +187,7 @@ namespace NewsletterTester
 
             try
             {
-                var addr = new MailAddress(emailTo);
+                var addr = new MailboxAddress(emailTo);
             }
             catch (Exception)
             {
